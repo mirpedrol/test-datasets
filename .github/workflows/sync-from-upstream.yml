@@ -1,0 +1,33 @@
+name: Sync branch from upstream
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to sync from upstream (nf-core/test-datasets)"
+        required: true
+        default: "crisprseq"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch branch from upstream
+        run: |
+          git remote add upstream https://github.com/nf-core/test-datasets.git
+          git remote set-branches --add upstream ${{ github.event.inputs.branch }}
+          git fetch upstream ${{ github.event.inputs.branch }}
+
+      - name: Push branch to fork
+        run: |
+          git push origin upstream/${{ github.event.inputs.branch }}:refs/heads/${{ github.event.inputs.branch }} || {
+            echo "Failed to push branch '${{ github.event.inputs.branch }}'. Check that the branch exists in upstream and there are no conflicts."
+            exit 1
+          }
